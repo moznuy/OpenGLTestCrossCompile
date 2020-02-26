@@ -12,3 +12,7 @@ target_link_libraries(OpenGLCustomTest PRIVATE glad)
 # GLFW
 add_subdirectory(3rd-party/glfw)
 target_link_libraries(OpenGLCustomTest PRIVATE glfw)
+
+# IMGUI
+add_subdirectory(3rd-party/imgui)
+target_link_libraries(OpenGLCustomTest PRIVATE imgui)

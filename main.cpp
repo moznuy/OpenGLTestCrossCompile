@@ -4,6 +4,10 @@
 // GLFW
 #include <GLFW/glfw3.h>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 
 #include <iostream>
 #include <string>
@@ -17,9 +21,10 @@ MessageCallback( GLenum source,
                  const GLchar* message,
                  const void* userParam )
 {
-    fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+    fprintf( stderr,
+            "GL CALLBACK: %s source = 0x%x, type = 0x%x, severity = 0x%x, message = %s\n",
              ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-             type, severity, message );
+             source, type, severity, message );
 }
 
 // Function prototypes
@@ -120,7 +125,26 @@ int main()
         std::cout << "Failed to initialize OpenGL context" << std::endl;
         return -1;
     }
+    //
+    // IMGUI
+    //
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
+
+    // Setup Platform/Renderer bindings
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    const char* glsl_version = "#version 330 core";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+    //
+    //
+    ///
 
 //    glGetString(GL_VERSION)
     int maj, min;
@@ -131,6 +155,12 @@ int main()
     bindSimpleProgram();
 
     glEnable              ( GL_DEBUG_OUTPUT );
+    glDebugMessageControl(
+            GL_DEBUG_SOURCE_SHADER_COMPILER,
+            GL_DEBUG_TYPE_OTHER,
+            GL_DEBUG_SEVERITY_NOTIFICATION,
+            0, nullptr,
+            GL_FALSE);
     glDebugMessageCallback( MessageCallback, nullptr);
 
 
@@ -168,6 +198,7 @@ int main()
     // Game loop
     char title[500];
     double prev = glfwGetTime(), now, diff;
+    bool show_another_window = true;
     while (!glfwWindowShouldClose(window))
     {
         // Check if any events have been activated (key pressed, mouse moved etc.) and call corresponding response functions
@@ -181,6 +212,26 @@ int main()
 
         // Swap the screen buffers
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        if (show_another_window)
+        {
+            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            ImGui::Text("Hello from another window!");
+            if (ImGui::Button("Close Me"))
+                show_another_window = false;
+            ImGui::End();
+        }
+
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+
         glfwSwapBuffers(window);
 
 
@@ -192,6 +243,8 @@ int main()
         }
         prev = now;
     }
+
+    ImGui::DestroyContext();
 
     // Terminates GLFW, clearing any resources allocated by GLFW.
     glfwTerminate();
