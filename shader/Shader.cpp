@@ -93,3 +93,14 @@ int Program::createShader(unsigned int type, const std::string &body) {
     return shader;
 }
 
+int Program::GetUniformLocation(const std::string &name) const {
+    if (this->locations.find(name) != this->locations.end())
+        return this->locations[name];
+
+    auto location = glGetUniformLocation(this->m_id, name.c_str());
+    if (location == -1) {
+        std::cerr << "Unknown var: " << name << std::endl;
+    }
+    return this->locations[name] = location;
+}
+

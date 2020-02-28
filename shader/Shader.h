@@ -5,6 +5,7 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <unordered_map>
 
 class Program {
 private:
@@ -15,6 +16,9 @@ private:
 
     bool LoadShaderFromFile();
     static int createShader(unsigned int type, const std::string &body);
+
+    mutable std::unordered_map<std::string, int> locations;
+    int GetUniformLocation(const std::string &name) const;
 public:
     explicit Program(const std::string &filename);
 
@@ -24,13 +28,13 @@ public:
 
     template <typename M>
     void setUniform4x4(const std::string &name, const M &u) {
-        auto location = glGetUniformLocation(this->m_id, name.c_str());
-        if (location == -1) {
-            std::cerr << "Unknown var: " << name << std::endl;
-            return;
-        }
+        auto location = GetUniformLocation(name);
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(u));
+    }
 
+    void setUniform1f(const std::string &name, float u) {
+        auto location = GetUniformLocation(name);
+        glUniform1f(location, u);
     }
 };
 

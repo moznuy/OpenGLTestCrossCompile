@@ -38,7 +38,30 @@ MessageCallback( GLenum source,
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
 // Window dimensions
-const GLuint WIDTH = 800, HEIGHT = 600;
+const GLuint WIDTH = 1600, HEIGHT = 1200;
+
+
+float b_scale = 1e-3;
+float scale = 1e-3;
+int zoom = 0;
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    zoom += int(yoffset);
+    scale = b_scale * powf(1.1f, (float)zoom);
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+//    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+//        popup_menu();
+}
+
+auto mouse_pos = glm::vec4();
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    mouse_pos.x = xpos;
+    mouse_pos.y = ypos;
+}
 
 
 // The MAIN function, from here we start the application and run the game loop
@@ -113,6 +136,10 @@ int main()
             GL_FALSE);
     glDebugMessageCallback( MessageCallback, nullptr);
 
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+
 
 //    return 0;
 
@@ -153,7 +180,10 @@ int main()
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, (const void *)0);
 
 
-//    auto proj = glm::ortho(-4.f, +4.f, -3.f, +3.f);
+    auto proj = glm::ortho(-800.f, +800.f, -600.f, +600.f);
+    auto proj_inv = glm::inverse(proj);
+
+
 //    auto model = glm::scale(glm::vec3(1.f, 1.f, 1.f) * 2.f);
 
 
@@ -172,6 +202,8 @@ int main()
     {
         // Check if any events have been activated (key pressed, mouse moved etc.) and call corresponding response functions
         glfwPollEvents();
+
+        p.setUniform1f("scale", scale);
 
 
         // Render
@@ -204,11 +236,13 @@ int main()
 
         glfwSwapBuffers(window);
 
+        auto true_mouse_pos = proj * mouse_pos;
+
 
         now = glfwGetTime();
         diff = now - prev;
         if (diff > .001f) {
-            snprintf(title, 500, "OpenGL Test FPS: %6.2f", 1 / diff);
+            snprintf(title, 500, "OpenGL Test FPS: %6.2f x: %6.2f y: %6.2f", 1 / diff, true_mouse_pos.x, true_mouse_pos.y);
             glfwSetWindowTitle(window, title);
         }
         prev = now;
