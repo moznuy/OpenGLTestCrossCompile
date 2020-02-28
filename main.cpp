@@ -8,9 +8,16 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+// Math
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+
 
 #include <iostream>
 #include <string>
+#include "shader/Shader.h"
 
 void GLAPIENTRY
 MessageCallback( GLenum source,
@@ -33,66 +40,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
 
-void bindSimpleProgram() {
-    std::string vertex_shader{
-        "#version 330 core\n"
-        "layout(location = 0) in vec4 a_pos;\n"
-        "void main() {\n"
-        "   gl_Position = a_pos;\n"
-        "}"
-    };
-    std::string fragment_shader{
-        "#version 330 core\n"
-        "void main() {\n"
-        "   gl_FragColor = vec4(0.2, 0.5, 0.7, 1.0);\n"
-        "}"
-    };
-    int status;
-    auto vertex = glCreateShader(GL_VERTEX_SHADER);
-    auto p = vertex_shader.c_str();
-    glShaderSource(vertex, 1, &p, nullptr);
-    glCompileShader(vertex);
-
-    glGetShaderiv(vertex, GL_COMPILE_STATUS, &status);
-    if (status == GL_FALSE) {
-        char buff [2048];
-        int buffLen;
-        glGetShaderInfoLog(vertex, 2048, &buffLen, buff);
-        std::cout << "Errors during compilation: \n" << buff << std::endl;
-    }
-
-    auto fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    p = fragment_shader.c_str();
-    glShaderSource(fragment, 1, &p, nullptr);
-    glCompileShader(fragment);
-
-    glGetShaderiv(fragment, GL_COMPILE_STATUS, &status);
-    if (status == GL_FALSE) {
-        char buff [2048];
-        int buffLen;
-        glGetShaderInfoLog(fragment, 2048, &buffLen, buff);
-        std::cout << "Errors during compilation: \n" << buff << std::endl;
-    }
-    auto program = glCreateProgram();
-    glAttachShader(program, vertex);
-    glAttachShader(program, fragment);
-    glLinkProgram(program);
-    glUseProgram(program);
-
-//    glDeleteShader(vertex);
-//    glDeleteShader(fragment);
-}
-
-//void debug(GLenum source,
-//           GLenum type,
-//           GLuint id,
-//           GLenum severity,
-//           GLsizei length,
-//           const GLchar* message,
-//           const void* userParam) {
-//    std::cerr <<  message << std::endl;
-//
-//}
 
 // The MAIN function, from here we start the application and run the game loop
 int main()
@@ -125,6 +72,10 @@ int main()
         std::cout << "Failed to initialize OpenGL context" << std::endl;
         return -1;
     }
+
+    Program p("res/shaders/mandelbrot.glsl");
+//    Program p("res/shaders/basic.glsl");
+    p.Compile();
     //
     // IMGUI
     //
@@ -152,7 +103,6 @@ int main()
     glGetIntegerv(GL_MINOR_VERSION, &min);
 
     std::cout << "Loaded version: " <<  maj << "." << min << std::endl;
-    bindSimpleProgram();
 
     glEnable              ( GL_DEBUG_OUTPUT );
     glDebugMessageControl(
@@ -171,11 +121,20 @@ int main()
 
 
 
-    
+
+//    float vertices[] = {
+//            -0.5f, -0.5f,
+//            +0.5f, -0.5f,
+//             0.0f, +0.5f,
+//    };
     float vertices[] = {
-            -0.5f, -0.5f,
-            +0.5f, -0.5f,
-             0.0f, +0.5f,
+            -1., -1.,
+            -1., +1.,
+            +1., +1.,
+
+            -1., -1.,
+            +1., -1.,
+            +1., +1.,
     };
 
     uint32_t VAO;
@@ -188,17 +147,27 @@ int main()
     uint32_t index_buf;
     glGenBuffers(1, &index_buf);
     glBindBuffer(GL_ARRAY_BUFFER, index_buf);
-    glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 12 * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, (const void *)0);
 
 
+//    auto proj = glm::ortho(-4.f, +4.f, -3.f, +3.f);
+//    auto model = glm::scale(glm::vec3(1.f, 1.f, 1.f) * 2.f);
+
+
+//    auto MVP = model * proj;
+//    std::cout<<glm::to_string(MVP)<<std::endl;
+
+    p.Bind();
+//    p.setUniform4x4("MVP", glm::mat4(1.f));
+//    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
     // Game loop
     char title[500];
     double prev = glfwGetTime(), now, diff;
-    bool show_another_window = true;
+    bool show_another_window = false;
     while (!glfwWindowShouldClose(window))
     {
         // Check if any events have been activated (key pressed, mouse moved etc.) and call corresponding response functions
@@ -207,11 +176,12 @@ int main()
 
         // Render
         // Clear the colorbuffer
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+//        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.f, 0.f, 0.f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Swap the screen buffers
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
